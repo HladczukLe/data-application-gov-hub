@@ -3,16 +3,16 @@ from datetime import datetime
 from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig
 
 profile_config = ProfileConfig(
-    profiles_yml_filepath=f"{os.environ['AIRFLOW_HOME']}/dags/dbt/ipea/profiles.yml",
+    profiles_yml_filepath=f"{os.environ['AIRFLOW_REPO_BASE']}/dags/dbt/ipea/profiles.yml",
     profile_name="ipea",
     target_name="prod",
 )
 
 my_cosmos_dag = DbtDag(
-    project_config=ProjectConfig(f"{os.environ['AIRFLOW_HOME']}/dags/dbt/ipea"),
+    project_config=ProjectConfig(f"{os.environ['AIRFLOW_REPO_BASE']}/dags/dbt/ipea"),
     profile_config=profile_config,
     execution_config=ExecutionConfig(
-        dbt_executable_path=f"{os.environ['AIRFLOW_HOME']}/.local/bin/dbt",
+        dbt_executable_path=f"{os.environ['AIRFLOW_REPO_BASE']}/.local/bin/dbt",
     ),
     schedule_interval="@daily",
     start_date=datetime(2025, 1, 1),

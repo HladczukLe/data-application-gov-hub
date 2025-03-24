@@ -192,7 +192,7 @@ class ClientPostgresDB:
 
     def get_id_programas(self) -> List[int]:
         """Extrai todos os IDs de programas da tabela beneficiário."""
-        query = "SELECT id_programa FROM transfere_gov.beneficiario"
+        query = "SELECT id_programa FROM transfere_gov.programas"
 
         with psycopg2.connect(self.conn_str) as conn:
             with conn.cursor() as cursor:
@@ -254,3 +254,56 @@ class ClientPostgresDB:
                 cursor.execute(query)
                 programacao_financeira = cursor.fetchall()
                 return programacao_financeira
+
+    def alter_table(
+        self, data: Dict[str, Any], table_name: str, schema: str = "raw"
+    ) -> None:
+        """
+        Alter table to add columns that exist in the data but not in the table.
+        All new columns will be created as TEXT type.
+
+        Args:
+            data: Sample data containing new columns
+            table_name: Name of table to alter
+            schema: Database schema name
+        """
+        flattened_data = self._flatten_data([data])[0]
+        columns = list(flattened_data.keys())
+
+        with psycopg2.connect(self.conn_str) as conn:
+            with conn.cursor() as cursor:
+                # Get existing columns
+                cursor.execute(
+                    f"""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = '{schema}'
+                    AND table_name = '{table_name}'
+                """
+                )
+                existing_columns = [row[0] for row in cursor.fetchall()]
+
+                # Add columns that don't exist
+                for column in columns:
+                    if column not in existing_columns:
+                        alter_query = (
+                            f"ALTER TABLE {schema}.{table_name} "
+                            f"ADD COLUMN IF NOT EXISTS {column} TEXT;"
+                        )
+                        try:
+                            cursor.execute(alter_query)
+                            logging.info(
+                                f"[cliente_postgres.py] Added column {column} "
+                                f"to {schema}.{table_name}"
+                            )
+                        except psycopg2.Error as e:
+                            logging.error(
+                                f"[cliente_postgres.py] Failed to add {column} "
+                                f"to {schema}.{table_name}. Error: {str(e)}"
+                            )
+
+                conn.commit()
+                logging.info(
+                    f"[cliente_postgres.py] Table {schema}.{table_name} "
+                    f"altered successfully"
+                )

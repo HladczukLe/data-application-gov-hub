@@ -5,6 +5,7 @@ from zeep.transports import Transport
 from zeep.wsse.username import UsernameToken
 from requests import Session
 from typing import Dict, Any, Optional
+from retry_helpers import retry_on_exception
 
 # Configuração do logger
 logging.basicConfig(
@@ -62,6 +63,7 @@ class ClienteSiafi:
             )
             return None
 
+    @retry_on_exception(max_attempts=3, initial_delay=2.0, backoff_factor=2.0)
     def consultar_programacao_financeira(
         self, ug_emitente: str, ano: int, num_lista: str
     ) -> Optional[Dict[str, Any]]:
@@ -111,4 +113,58 @@ class ClienteSiafi:
             return response_dict
         except Exception as e:
             logger.error(f"Erro na consulta: {e}")
+            return None
+
+    @retry_on_exception(max_attempts=3, initial_delay=2.0, backoff_factor=2.0)
+    def consultar_nota_empenho(
+        self, ug_emitente: str, ano_empenho: int, num_empenho: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Consulta detalhes de uma Nota de Empenho no SIAFI.
+
+        Args:
+            ug_emitente (str): UG emitente da Nota de Empenho.
+            ano_empenho (int): Ano da Nota de Empenho.
+            num_empenho (str): Número da Nota de Empenho.
+
+        Returns:
+            dict: Resposta da consulta ou None em caso de falha.
+        """
+        endpoint = "services/orcamentario/manterOrcamentario"
+        client = self._criar_cliente_soap(ano_empenho, endpoint)
+        if not client:
+            logger.error(
+                f"Não foi possível criar cliente ano {ano_empenho} e endpoint {endpoint}."
+            )
+            return None
+
+        soap_headers = {
+            "cabecalhoSIAFI": {
+                "nomeSistemaSIAFI": f"SIAFI{str(ano_empenho)}",
+                "ug": ug_emitente,
+                "bilhetador": {"nonce": "nonce123456"},
+            }
+        }
+
+        parametros_consulta = {
+            "ugEmitente": ug_emitente,
+            "anoEmpenho": ano_empenho,
+            "numEmpenho": num_empenho.zfill(6),
+        }
+
+        try:
+            logger.info(
+                f"Consultando Nota de Empenho {parametros_consulta['numEmpenho']}..."
+            )
+            response = client.service.orcDetalharEmpenho(
+                parametros_consulta, _soapheaders=soap_headers
+            )
+            logger.info(f"Resposta recebida: {response}")
+
+            response_dict: Dict[str, Any] = dict(response) if response else {}
+            return response_dict
+        except Exception as e:
+            logger.error(
+                f"Erro consulta da Nota Empenho {parametros_consulta['numEmpenho']}: {e}"
+            )
             return None

@@ -11,16 +11,20 @@ variables:
   DBT_PROJECT_DIR: "${CI_PROJECT_DIR}/plugins/dbt"
   GIT_CI_USER: "ci bot"
   GIT_CI_EMAIL: "ci.lappis.rocks@gmail.com"
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE/airflow-ipea:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA"
 
 cache:
   paths:
     - .cache/poetry
     - .cache/pip
     - .venv
+    - .cache/docker
 
 stages:
   - lint
   - test
+  - build
 
 .install-poetry:
   before_script:
@@ -65,3 +69,20 @@ scan:
       - plugins/**
       - src/**
       - tests/**
+
+docker-build-and-push:
+  stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - changes:
+      - Dockerfile
+      - requirements.txt
+      - pyproject.toml

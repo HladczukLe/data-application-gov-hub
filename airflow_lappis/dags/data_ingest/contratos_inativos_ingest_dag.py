@@ -1,5 +1,4 @@
 import logging
-import os
 import yaml
 from airflow.decorators import dag, task
 from airflow.models import Variable
@@ -25,21 +24,17 @@ def api_contratos_inativos_dag() -> None:
 
     @task
     def fetch_and_store_contratos_inativos() -> None:
-        logging.info("Starting fetch_and_store_contratos_inativos task")
+        logging.info("Iniciando fetch_and_store_contratos_inativos")
 
-        orgao_alvo = Variable.get("ORGAO_ALVO", default_var=None)
+        orgao_alvo = Variable.get("airflow_orgao", default_var=None)
         if not orgao_alvo:
-            logging.error("Variável ORGAO_ALVO não definida no Airflow!")
-            raise ValueError("ORGAO_ALVO não definida no Airflow")
+            logging.error("Variável airflow_orgao não definida!")
+            raise ValueError("airflow_orgao não definida")
 
-        config_path = os.path.join(
-            os.environ.get("AIRFLOW_HOME", "/opt/airflow"), "configs/orgaos.yaml"
-        )
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
+        orgaos_config_str = Variable.get("airflow_variables", default_var="{}")
+        orgaos_config = yaml.safe_load(orgaos_config_str)
 
-        orgaos = config.get("orgaos", {})
-        ug_codes = orgaos.get(orgao_alvo, {}).get("codigos_ug", [])
+        ug_codes = orgaos_config.get(orgao_alvo, {}).get("codigos_ug", [])
 
         if not ug_codes:
             logging.warning(f"Nenhum código UG encontrado para o órgão '{orgao_alvo}'")
@@ -50,11 +45,11 @@ def api_contratos_inativos_dag() -> None:
         db = ClientPostgresDB(postgres_conn_str)
 
         for ug_code in ug_codes:
-            logging.info(f"Fetching contratos inativos for UG code: {ug_code}")
+            logging.info(f"Buscando contratos inativos para UG: {ug_code}")
             contratos = api.get_contratos_inativos_by_ug(ug_code)
             if contratos:
                 logging.info(
-                    f"Inserting contratos inativos for UG code: {ug_code} into PostgreSQL"
+                    f"Inserindo contratos inativos da UG {ug_code} no schema compras_gov"
                 )
                 db.insert_data(
                     contratos,
@@ -64,7 +59,7 @@ def api_contratos_inativos_dag() -> None:
                     schema="compras_gov",
                 )
             else:
-                logging.warning(f"No contratos inativos found for UG code: {ug_code}")
+                logging.warning(f"Nenhum contrato inativo encontrado para UG {ug_code}")
 
     fetch_and_store_contratos_inativos()
 

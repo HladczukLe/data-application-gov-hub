@@ -51,3 +51,29 @@ class ClienteSenadores(ClienteBase):
         else:
             logging.warning(f"[cliente_senadores.py] Failed with status: {status}")
             return []
+        
+    def get_filiacoes_senador(self, codigo_parlamentar: int) -> list:
+        """
+        Obtém o histórico de filiações partidárias de um senador específico.
+        """
+        endpoint = f"/senador/{codigo_parlamentar}/filiacoes"
+        logging.info(f"[cliente_senadores.py] Fetching filiações para o senador: {codigo_parlamentar}")
+
+        status, data = self.request(
+            http.HTTPMethod.GET, endpoint, headers=self.BASE_HEADER
+        )
+
+        if status == http.HTTPStatus.OK and isinstance(data, dict):
+            try:
+                # Estrutura: FiliacaoPartidaria -> Parlamentar -> Filiacoes -> Filiacao
+                filiacoes_root = data.get("FiliacaoParlamentar", {}).get("Parlamentar", {})
+                filiacoes = filiacoes_root.get("Filiacoes", {}).get("Filiacao", [])
+
+                if isinstance(filiacoes, dict):
+                    filiacoes = [filiacoes]
+
+                return filiacoes
+            except Exception as e:
+                logging.error(f"[cliente_senadores.py] Erro ao parsear filiações: {e}")
+                return []
+        return []

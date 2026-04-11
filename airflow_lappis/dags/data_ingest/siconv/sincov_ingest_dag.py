@@ -6,7 +6,6 @@ from cliente_postgres import ClientPostgresDB
 from cliente_siconv import ClienteSiconv
 from tabelas_siconv import TABELAS_SICONV
 
-
 @dag(
     schedule_interval="@daily",
     start_date=datetime(2024, 1, 1),
@@ -31,28 +30,48 @@ def siconv_ingestao_dag() -> None:
         logging.info(f"[siconv_ingest_dag.py] Iniciando ingestão da tabela {nome_tabela}")
         postgres_conn_str = get_postgres_conn("postgres_mir")
         db = ClientPostgresDB(postgres_conn_str)
-
         cliente = ClienteSiconv()
-        registros = cliente.ler_csv(nome_csv, skip_rows, colunas_esperadas=colunas)
+        
+        gerador_registros = cliente.ler_csv(nome_csv, skip_rows, colunas_esperadas=colunas)
 
-        if not registros:
-            logging.warning(f"[siconv_ingest_dag.py] Nenhum registro encontrado em {nome_csv}")
-            return
+        lote = []
+        tamanho_lote = 5000
+        total_inserido = 0
 
-        db.insert_data(
-            registros,
-            nome_tabela,
-            conflict_fields=conflict_fields,
-            primary_key=primary_key,
-            schema="siconv",
-        )
+        for registro in gerador_registros:
+            lote.append(registro)
+            
+            if len(lote) >= tamanho_lote:
+                db.insert_data(
+                    lote,
+                    nome_tabela,
+                    conflict_fields=conflict_fields,
+                    primary_key=primary_key,
+                    schema="siconv",
+                )
+                total_inserido += len(lote)
+                logging.info(f"[siconv_ingest_dag.py] {total_inserido} registros processados...")
+                lote = []
 
-        logging.info(f"[siconv_ingest_dag.py] {len(registros)} registros inseridos em {nome_tabela}")
+        if lote:
+            db.insert_data(
+                lote,
+                nome_tabela,
+                conflict_fields=conflict_fields,
+                primary_key=primary_key,
+                schema="siconv",
+            )
+            total_inserido += len(lote)
 
-    zip_path = baixar_siconv()
+        if total_inserido == 0:
+            logging.warning(f"[siconv_ingest_dag.py] Nenhum registro processado para {nome_tabela}")
+        else:
+            logging.info(f"[siconv_ingest_dag.py] Ingestão finalizada: {total_inserido} registros em {nome_tabela}")
+
+    path_zip = baixar_siconv()
     for tabela in TABELAS_SICONV:
         ingerir_tabela(
-            zip_path=zip_path,
+            zip_path=path_zip,
             nome_tabela=tabela["nome_tabela"],
             nome_csv=tabela["nome_csv"],
             conflict_fields=tabela["conflict_fields"],
@@ -60,6 +79,5 @@ def siconv_ingestao_dag() -> None:
             skip_rows=tabela["skip_rows"],
             colunas=tabela["colunas"],
         )
-
 
 siconv_ingestao_dag()

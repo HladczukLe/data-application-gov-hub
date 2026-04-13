@@ -323,3 +323,45 @@ models:
           nome_tabela: 'siafi_dbt.pf_ptres_mir'
           nome_coluna: 'dotacao_atualizada'
           tipo_esperado: 'numeric'
+
+  - name: pf_transfere
+    description: >
+      Modelo da camada bronze para programacao financeira do Transferegov,
+      com padronizacao de tipos de identificadores e campos textuais,
+      alem do ajuste de dt_ingest para timestamp com fuso UTC-3.
+    meta:
+      tags:
+        - bronze
+    columns:
+      - name: id_programacao
+        description: "Identificador da programacao financeira."
+      - name: id_plano_acao
+        description: "Identificador do plano de acao no Transferegov."
+      - name: tp_pf_tipo_programacao
+        description: "Tipo da programacao financeira (ex.: T)."
+      - name: tx_minuta_programacao
+        description: "Identificador da minuta/programacao (formato MPF)."
+      - name: tx_numero_programacao
+        description: "Numero da programacao financeira."
+      - name: tx_situacao_programacao
+        description: "Situacao da programacao financeira."
+      - name: tx_observacao_programacao
+        description: "Descricao textual/observacao da programacao."
+      - name: ug_emitente_programacao
+        description: "Codigo da UG emitente da programacao."
+      - name: ug_favorecida_programacao
+        description: "Codigo da UG favorecida da programacao."
+      - name: dh_recebimento_programacao
+        description: "Timestamp de recebimento/cadastro da programacao no sistema de origem."
+      - name: dt_ingest
+        description: "Timestamp de ingestao ajustado para UTC-3."
+
+    tests:
+      - verificacao_tipagem:
+          nome_tabela: 'siafi_dbt.pf_transfere_mir'
+          nome_coluna: 'id_plano_acao'
+          tipo_esperado: 'integer'
+      - verificacao_tipagem:
+          nome_tabela: 'siafi_dbt.pf_transfere_mir'
+          nome_coluna: 'id_programacao'
+          tipo_esperado: 'integer'

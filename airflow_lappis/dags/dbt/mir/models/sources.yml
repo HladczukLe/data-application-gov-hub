@@ -27,6 +27,11 @@ sources:
     tables:
       - name: senadores
 
+  - name: transfere_gov
+    schema: transfere_gov
+    tables:
+      - name: programacao_financeira
+
   - name: siafi
     schema: siafi
     tables:

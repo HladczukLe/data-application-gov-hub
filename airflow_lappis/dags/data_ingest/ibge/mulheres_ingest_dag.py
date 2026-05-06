@@ -52,7 +52,7 @@ def _remover_conectivos(partes: list[str]) -> list[str]:
     return filtradas or partes
 
 
-def _aplicar_corte_tabela(partes: list[str], num_tabela: str, max_len: int) -> list[str]:
+def _aplicar_corte_tabela(partes: list[str], num_tabela: str) -> list[str]:
     """Remove prefixo fixo de partes para tabelas com regra especial."""
     tabela_key = num_tabela.lower()
     corte = REGRAS_CORTE_TABELAS.get(tabela_key)
@@ -70,7 +70,7 @@ def _aplicar_corte_tabela(partes: list[str], num_tabela: str, max_len: int) -> l
     return cortadas if "_".join(cortadas) else partes
 
 
-def _abreviar_partes_meio(partes: list[str], max_len: int) -> str:
+def _abreviar_partes_meio(partes: list[str]) -> str:
     """Abrevia partes do meio (exceto primeira e última) para caber em max_len."""
     if len(partes) <= 2:
         return "_".join(partes)
@@ -95,7 +95,6 @@ def encurtar_nome_coluna(
     nome: str,
     max_len: int = MAX_COL_LEN,
     num_tabela: str | None = None,
-    table_name: str | None = None,
 ) -> str:
     """
     Limpa e encurta o nome da coluna:
@@ -140,7 +139,7 @@ def _normalizar_nome_coluna(
     """Limpa, normaliza e encurta o nome de uma coluna."""
     sem_acento = _remover_acentos(str(col))
     limpo = re.sub(
-        r"[^\w_%]",
+        r"[^\w%]",
         "",
         sem_acento.lower()
         .replace("%", "_porcentagem")
@@ -183,7 +182,7 @@ def _construir_nome_tabela(
     short_file = match.group(1) if match else clean_file[:15]
 
     clean_sheet = re.sub(
-        r"[^\w_]",
+        r"[^\w]",
         "",
         _remover_acentos(sheet_name).lower().replace(" ", "_").replace("-", "_"),
     )

@@ -16,16 +16,25 @@ class ClienteIBGE(ClienteBase):
         self.database = database
         logging.info("[cliente_ibge] Inicializando conexão FTPS com: %s", self.host)
 
-    # Conexão
+    # Conexão segura com SSL/TLS
     def _criar_ssl_context(self) -> ssl.SSLContext:
         """
-        Cria um SSLContext aceitando certificados auto-assinados.
-        Verificação desabilitada intencionalmente, pois o FTP público e
-        anônimo do IBGE não possui certificado de CA pública.
+        A função cria uma conexão criptografada (TLS 1.2+) com o FTP do IBGE,
+        mas desativa a checagem do certificado porque o servidor do governo usa um certificado autoassinado,
+        o que de outra forma impediria a conexão.
         """
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False  # servidor anônimo sem hostname válido
-        ctx.verify_mode = ssl.CERT_NONE  # certificado auto-assinado do IBGE 
+        # S4423 corrigido: protocolo explícito TLS_CLIENT com versão mínima TLS 1.2
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+
+        # S5527: hostname verification desabilitada intencionalmente —
+        # ftp.ibge.gov.br não apresenta CN/SAN compatível no certificado.
+        ctx.check_hostname = False  # NOSONAR
+
+        # S4830: validação de certificado desabilitada intencionalmente —
+        # o servidor usa certificado auto-assinado sem CA pública reconhecida.
+        ctx.verify_mode = ssl.CERT_NONE  # NOSONAR
+
         return ctx
 
     @contextmanager
@@ -41,7 +50,7 @@ class ClienteIBGE(ClienteBase):
         ftp = FTP_TLS(context=self._criar_ssl_context(), timeout=30)
         try:
             ftp.connect(self.host)
-            resp = ftp.login(user="anonymous", passwd="anonymous@")
+            resp = ftp.login(user="anonymous", passwd="anonymous@")  # NOSONAR
             logging.info("[cliente_ibge] FTPS login: %s", resp)
             ftp.prot_p()  # ativa proteção TLS no canal de dados
             ftp.set_pasv(True)
@@ -53,6 +62,7 @@ class ClienteIBGE(ClienteBase):
             except Exception:
                 ftp.close()
 
+    # Interface pública
     def listar_arquivos_alvo(self) -> list[str]:
         """Lista arquivos Excel/CSV do diretório do Censo 2022."""
         try:

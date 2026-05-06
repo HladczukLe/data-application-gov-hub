@@ -1,6 +1,9 @@
-import logging
 import io
-from ftplib import FTP
+import logging
+import ssl
+from contextlib import contextmanager
+from ftplib import FTP_TLS
+
 from cliente_base import ClienteBase
 
 
@@ -8,58 +11,73 @@ class ClienteIBGE(ClienteBase):
     FTP_HOST = "ftp.ibge.gov.br"
     BASE_DIR = "/Censos/Censo_Demografico_2022/"
 
-    def __init__(self, database) -> None:
+    def __init__(self, database: str) -> None:
         self.host = ClienteIBGE.FTP_HOST
         self.database = database
-        logging.info(f"[cliente_ibge.py] Inicializando conexão FTP com: {self.host}")
+        logging.info("[cliente_ibge] Inicializando conexão FTPS com: %s", self.host)
 
+    # Conexão
+    def _criar_ssl_context(self) -> ssl.SSLContext:
+        """
+        Cria um SSLContext aceitando certificados auto-assinados.
+        Verificação desabilitada intencionalmente, pois o FTP público e
+        anônimo do IBGE não possui certificado de CA pública.
+        """
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False  # servidor anônimo sem hostname válido
+        ctx.verify_mode = ssl.CERT_NONE  # certificado auto-assinado do IBGE 
+        return ctx
+
+    @contextmanager
     def _conectar(self):
-        """Método privado para abrir conexão."""
-        ftp = FTP(self.host)
-        ftp.login()  # IBGE aceita login anônimo
+        """
+        Abre uma conexão FTPS segura e a entrega como context manager.
 
-        # Garantindo que o caminho não tenha erro de barras
+        Uso:
+            with self._conectar() as ftp:
+                ftp.nlst()
+        """
         full_path = f"{self.BASE_DIR.rstrip('/')}/{self.database.lstrip('/')}"
-        ftp.cwd(full_path)
-        return ftp
-
-    def listar_arquivos_alvo(self) -> list:
-        """
-        Lista todos os arquivos de um diretório específico do Censo 2022.
-        """
+        ftp = FTP_TLS(context=self._criar_ssl_context(), timeout=30)
         try:
-            ftp = self._conectar()
-            arquivos = ftp.nlst()
-            ftp.quit()
+            ftp.connect(self.host)
+            resp = ftp.login(user="anonymous", passwd="anonymous@")
+            logging.info("[cliente_ibge] FTPS login: %s", resp)
+            ftp.prot_p()  # ativa proteção TLS no canal de dados
+            ftp.set_pasv(True)
+            ftp.cwd(full_path)
+            yield ftp
+        finally:
+            try:
+                ftp.quit()
+            except Exception:
+                ftp.close()
 
-            # Filtramos apenas arquivos de dados (Excel ou CSV)
-            arquivos_filtrados = [
-                f for f in arquivos if f.endswith((".xlsx", ".xls", ".csv"))
-            ]
+    def listar_arquivos_alvo(self) -> list[str]:
+        """Lista arquivos Excel/CSV do diretório do Censo 2022."""
+        try:
+            with self._conectar() as ftp:
+                arquivos = ftp.nlst()
 
-            logging.info(
-                f"[cliente_ibge.py] {len(arquivos_filtrados)} arquivos encontrados no FTP."
-            )
-            return arquivos_filtrados
-        except Exception as e:
-            logging.error(f"[cliente_ibge.py] Erro ao listar arquivos: {e}")
+            filtrados = [f for f in arquivos if f.endswith((".xlsx", ".xls", ".csv"))]
+            logging.info("[cliente_ibge] %d arquivo(s) encontrado(s).", len(filtrados))
+            return filtrados
+
+        except Exception as exc:
+            logging.error("[cliente_ibge] Erro ao listar arquivos: %s", exc)
             return []
 
     def obter_conteudo_arquivo(self, nome_arquivo: str) -> io.BytesIO | None:
-        """
-        Faz o download do arquivo do FTP diretamente para a memória.
-        """
+        """Baixa um arquivo do FTP diretamente para memória."""
         buffer = io.BytesIO()
         try:
-            ftp = self._conectar()
-            logging.info(f"[cliente_ibge.py] Baixando arquivo: {nome_arquivo}")
-
-            # Comando RETR baixa o arquivo binário
-            ftp.retrbinary(f"RETR {nome_arquivo}", buffer.write)
-            ftp.quit()
+            with self._conectar() as ftp:
+                logging.info("[cliente_ibge] Baixando: %s", nome_arquivo)
+                ftp.retrbinary(f"RETR {nome_arquivo}", buffer.write)
 
             buffer.seek(0)
             return buffer
-        except Exception as e:
-            logging.error(f"[cliente_ibge.py] Erro ao baixar {nome_arquivo}: {e}")
+
+        except Exception as exc:
+            logging.error("[cliente_ibge] Erro ao baixar '%s': %s", nome_arquivo, exc)
             return None

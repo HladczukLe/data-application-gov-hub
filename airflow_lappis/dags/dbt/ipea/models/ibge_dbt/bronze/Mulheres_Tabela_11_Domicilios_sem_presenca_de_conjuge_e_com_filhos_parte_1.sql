@@ -1,9 +1,10 @@
 {{ config(materialized="table") }}
 
-select 
-    brasil_grande_regiao_unidade_da_federacao_e_municipio,
-    indicador,
-    valor,
-    (dt_ingest || '-03:00')::timestamptz as dt_ingest,
+SELECT
+    brasil_grande_regiao_unidade_federacao_municipio,
+    sexo_pessoa_responsavel_pelo_domicilio_total,
+    sexo_pessoa_responsavel_pelo_domicilio_homens,
+    sexo_pessoa_responsavel_pelo_domicilio_mulheres,
+    (dt_ingest || '-03:00')::timestamptz AS dt_ingest,
     nome_fonte
-from {{ source("censo_demografico", "mulheres_tabela_11_tabela_base_do_sidra_9882_parte_1") }}
+FROM {{ source("censo_demografico", "mulheres_tabela_11_tabela_base_do_sidra_9882_parte_1") }}

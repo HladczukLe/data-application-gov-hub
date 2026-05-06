@@ -1,9 +1,31 @@
 {{ config(materialized="table") }}
 
-select 
-    brasil_grande_regiao_e_unidade_da_federacao,
-    indicador,
-    valor,
-    (dt_ingest || '-03:00')::timestamptz as dt_ingest,
+SELECT
+    brasil_grande_regiao_unidade_federacao,
+    grandes_grupos_ocupacao_trabalho_principal_sexo_total_homens,
+    grandes_grupos_ocupacao_trabalho_principal_sexo_total_mulheres,
+    diretores_gerentes_homens,
+    diretores_gerentes_mulheres,
+    profissionais_ciencias_intelectuais_homens,
+    profissionais_ciencias_intelectuais_mulheres,
+    tecnicos_profissionais_nivel_medio_homens,
+    tecnicos_profissionais_nivel_medio_mulheres,
+    trabalhadores_apoio_administrativo_homens,
+    trabalhadores_apoio_administrativo_mulheres,
+    trabalhadores_dos_servi_vende_dos_comer_merca_homens,
+    trabalhadores_dos_servi_vende_dos_comer_merca_mulheres,
+    trabalhadores_quali_agrop_flore_caca_pesca_homens,
+    trabalhadores_quali_agrop_flore_caca_pesca_mulheres,
+    trabalhadores_quali_opera_artes_const_artes_mecan_outros_homens,
+    trabalhadores_quali_opera_artes_const_artes_mecan_outr_mulheres,
+    operadores_instalacoes_maquinas_montadores_homens,
+    operadores_instalacoes_maquinas_montadores_mulheres,
+    ocupacoes_elementares_homens,
+    ocupacoes_elementares_mulheres,
+    membros_forcas_armadas_policiais_bombeiros_militares_homens,
+    membros_forcas_armadas_policiais_bombeiros_militares_mulheres,
+    ocupacoes_mal_definidas_homens,
+    ocupacoes_mal_definidas_mulheres,
+    (dt_ingest || '-03:00')::timestamptz AS dt_ingest,
     nome_fonte
-from {{ source("censo_demografico", "mulheres_tabela_7_tabela_base_do_sidra_10282_parte_1") }}
+FROM {{ source("censo_demografico", "mulheres_tabela_7_tabela_base_do_sidra_10282_parte_1") }}

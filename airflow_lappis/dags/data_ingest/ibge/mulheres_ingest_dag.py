@@ -112,12 +112,12 @@ def encurtar_nome_coluna(
         return nome_limpo
 
     if num_tabela:
-        partes = _aplicar_corte_tabela(partes, num_tabela, max_len)
+        partes = _aplicar_corte_tabela(partes, num_tabela)
         nome_limpo = "_".join(partes)
         if len(nome_limpo) <= max_len:
             return nome_limpo
 
-    nome_abreviado = _abreviar_partes_meio(partes, max_len)
+    nome_abreviado = _abreviar_partes_meio(partes)
     if len(nome_abreviado) <= max_len:
         return nome_abreviado
 
@@ -146,7 +146,7 @@ def _normalizar_nome_coluna(
         .replace(" ", "_")
         .replace("-", "_"),
     )
-    encurtado = encurtar_nome_coluna(limpo, num_tabela=num_tabela, table_name=table_name)
+    encurtado = encurtar_nome_coluna(limpo, num_tabela=num_tabela)
     return encurtado if encurtado != "none" else f"coluna_vazia_{idx}"
 
 

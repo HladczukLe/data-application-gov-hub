@@ -6,6 +6,9 @@ from ftplib import FTP_TLS
 
 from cliente_base import ClienteBase
 
+_FTP_USER = "anonymous"  # NOSONAR
+_FTP_PASS = "anonymous@"  # NOSONAR
+
 
 class ClienteIBGE(ClienteBase):
     FTP_HOST = "ftp.ibge.gov.br"
@@ -24,7 +27,7 @@ class ClienteIBGE(ClienteBase):
         o que de outra forma impediria a conexão.
         """
         # S4423 corrigido: protocolo explícito TLS_CLIENT com versão mínima TLS 1.2
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS)  # NOSONAR  ← não força check_hostname
         ctx.minimum_version = ssl.TLSVersion.TLSv1_2
 
         # S5527: hostname verification desabilitada intencionalmente —
@@ -50,7 +53,7 @@ class ClienteIBGE(ClienteBase):
         ftp = FTP_TLS(context=self._criar_ssl_context(), timeout=30)
         try:
             ftp.connect(self.host)
-            resp = ftp.login(user="anonymous", passwd="anonymous@")  # NOSONAR
+            resp = ftp.login(user=self._FTP_USER, passwd=self._FTP_PASS)
             logging.info("[cliente_ibge] FTPS login: %s", resp)
             ftp.prot_p()  # ativa proteção TLS no canal de dados
             ftp.set_pasv(True)

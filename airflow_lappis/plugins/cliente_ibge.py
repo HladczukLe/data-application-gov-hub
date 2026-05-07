@@ -2,10 +2,10 @@ import io
 import logging
 from contextlib import contextmanager
 
-# NOSONAR: S5332 — ftp.ibge.gov.br é um servidor público do governo
+# ftp.ibge.gov.br é um servidor público do governo
 # brasileiro que não oferece suporte a FTPS/SFTP. Apenas dados
 # públicos e anônimos são trafegados nessa conexão.
-from ftplib import FTP
+from ftplib import FTP  # NOSONAR: S5332
 
 from cliente_base import ClienteBase
 

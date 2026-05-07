@@ -5,7 +5,7 @@ from contextlib import contextmanager
 # ftp.ibge.gov.br é um servidor público do governo
 # brasileiro que não oferece suporte a FTPS/SFTP. Apenas dados
 # públicos e anônimos são trafegados nessa conexão.
-from ftplib import FTP  # NOSONAR: S5332
+from ftplib import FTP  # NOSONAR
 
 from cliente_base import ClienteBase
 
@@ -15,8 +15,8 @@ class ClienteIBGE(ClienteBase):
     BASE_DIR = "/Censos/Censo_Demografico_2022/"
 
     # Credenciais públicas de acesso anônimo
-    _FTP_USER = "anonymous"  # NOSONAR: S2068
-    _FTP_PASS = "anonymous@"  # NOSONAR: S2068
+    _FTP_USER = "anonymous"  # NOSONAR
+    _FTP_PASS = "anonymous@"  # NOSONAR
 
     def __init__(self, database: str) -> None:
         self.host = ClienteIBGE.FTP_HOST
@@ -33,7 +33,7 @@ class ClienteIBGE(ClienteBase):
                 ftp.nlst()
         """
         full_path = f"{self.BASE_DIR.rstrip('/')}/{self.database.lstrip('/')}"
-        ftp = FTP(timeout=30)  # NOSONAR: S5332
+        ftp = FTP(timeout=30)  # NOSONAR
         try:
             ftp.connect(self.host)
             resp = ftp.login(user=self._FTP_USER, passwd=self._FTP_PASS)

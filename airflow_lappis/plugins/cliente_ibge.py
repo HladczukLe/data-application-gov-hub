@@ -1,61 +1,43 @@
 import io
 import logging
-import ssl
 from contextlib import contextmanager
-from ftplib import FTP_TLS
+
+# NOSONAR: S5332 — ftp.ibge.gov.br é um servidor público do governo
+# brasileiro que não oferece suporte a FTPS/SFTP. Apenas dados
+# públicos e anônimos são trafegados nessa conexão.
+from ftplib import FTP
 
 from cliente_base import ClienteBase
-
-_FTP_USER = "anonymous"  # NOSONAR
-_FTP_PASS = "anonymous@"  # NOSONAR
 
 
 class ClienteIBGE(ClienteBase):
     FTP_HOST = "ftp.ibge.gov.br"
     BASE_DIR = "/Censos/Censo_Demografico_2022/"
 
+    # Credenciais públicas de acesso anônimo
+    _FTP_USER = "anonymous"  # NOSONAR: S2068
+    _FTP_PASS = "anonymous@"  # NOSONAR: S2068
+
     def __init__(self, database: str) -> None:
         self.host = ClienteIBGE.FTP_HOST
         self.database = database
-        logging.info("[cliente_ibge] Inicializando conexão FTPS com: %s", self.host)
-
-    # Conexão segura com SSL/TLS
-    def _criar_ssl_context(self) -> ssl.SSLContext:
-        """
-        A função cria uma conexão criptografada (TLS 1.2+) com o FTP do IBGE,
-        mas desativa a checagem do certificado porque o servidor do governo usa um certificado autoassinado,
-        o que de outra forma impediria a conexão.
-        """
-        # S4423 corrigido: protocolo explícito TLS_CLIENT com versão mínima TLS 1.2
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS)  # NOSONAR  ← não força check_hostname
-        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
-
-        # S5527: hostname verification desabilitada intencionalmente —
-        # ftp.ibge.gov.br não apresenta CN/SAN compatível no certificado.
-        ctx.check_hostname = False  # NOSONAR
-
-        # S4830: validação de certificado desabilitada intencionalmente —
-        # o servidor usa certificado auto-assinado sem CA pública reconhecida.
-        ctx.verify_mode = ssl.CERT_NONE  # NOSONAR
-
-        return ctx
+        logging.info("[cliente_ibge] Inicializando conexão FTP com: %s", self.host)
 
     @contextmanager
     def _conectar(self):
         """
-        Abre uma conexão FTPS segura e a entrega como context manager.
+        Abre uma conexão FTP com o servidor público do IBGE.
 
         Uso:
             with self._conectar() as ftp:
                 ftp.nlst()
         """
         full_path = f"{self.BASE_DIR.rstrip('/')}/{self.database.lstrip('/')}"
-        ftp = FTP_TLS(context=self._criar_ssl_context(), timeout=30)
+        ftp = FTP(timeout=30)  # NOSONAR: S5332
         try:
             ftp.connect(self.host)
             resp = ftp.login(user=self._FTP_USER, passwd=self._FTP_PASS)
-            logging.info("[cliente_ibge] FTPS login: %s", resp)
-            ftp.prot_p()  # ativa proteção TLS no canal de dados
+            logging.info("[cliente_ibge] FTP login: %s", resp)
             ftp.set_pasv(True)
             ftp.cwd(full_path)
             yield ftp

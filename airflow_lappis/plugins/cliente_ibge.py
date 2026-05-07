@@ -14,10 +14,6 @@ class ClienteIBGE(ClienteBase):
     FTP_HOST = "ftp.ibge.gov.br"
     BASE_DIR = "/Censos/Censo_Demografico_2022/"
 
-    # Credenciais públicas de acesso anônimo
-    _FTP_USER = "anonymous"  # NOSONAR
-    _FTP_PASS = "anonymous@"  # NOSONAR
-
     def __init__(self, database: str) -> None:
         self.host = ClienteIBGE.FTP_HOST
         self.database = database
@@ -36,7 +32,7 @@ class ClienteIBGE(ClienteBase):
         ftp = FTP(timeout=30)  # NOSONAR
         try:
             ftp.connect(self.host)
-            resp = ftp.login(user=self._FTP_USER, passwd=self._FTP_PASS)
+            resp = ftp.login(user="anonymous", passwd="anonymous@")
             logging.info("[cliente_ibge] FTP login: %s", resp)
             ftp.set_pasv(True)
             ftp.cwd(full_path)

@@ -180,13 +180,13 @@ Closes #42
 
 | Tipo de PR | Revisores |
 | --- | --- |
-| DAGs de ingestão | Equipe de desenvolvimento/dados |
-| Modelos dbt | Equipe de desenvolvimento/dados |
-| Plugins e helpers | Equipe de arquitetura/infraestrutura |
-| Documentação de configuração, infraestrutura ou deploy | Equipe de arquitetura/infraestrutura |
-| Documentação de DAGs, modelos dbt ou fluxo de dados | Equipe de desenvolvimento/dados |
+| DAGs de ingestão | `@GovHub-br/developers` |
+| Modelos dbt | `@GovHub-br/developers` |
+| Plugins e helpers | `@GovHub-br/infra` |
+| Documentação de configuração, infraestrutura ou deploy | `@GovHub-br/infra` |
+| Documentação de DAGs, modelos dbt ou fluxo de dados | `@GovHub-br/developers` |
 
-Quando houver times configurados no GitHub, solicite revisão do time responsável pelo domínio alterado. Caso os times ainda não estejam configurados, solicite revisão de pelo menos uma pessoa mantenedora ou responsável técnica pela área.
+Os times `@GovHub-br/developers` e `@GovHub-br/infra` são os responsáveis atuais pelos domínios técnicos do repositório. Caso um PR altere mais de um domínio, solicite revisão de todos os times responsáveis pelas áreas impactadas.
 
 ### Número Mínimo de Aprovações
 
@@ -196,13 +196,14 @@ Quando houver times configurados no GitHub, solicite revisão do time responsáv
 
 ### Configuração Recomendada no GitHub
 
-Para aplicar essas regras automaticamente, recomenda-se configurar:
+Para aplicar essas regras automaticamente, o repositório usa um arquivo [`CODEOWNERS`](CODEOWNERS) com os times responsáveis por cada domínio técnico.
 
-- `CODEOWNERS`, apontando cada área do projeto para o time responsável
+Além do `CODEOWNERS`, a branch `main` deve manter as seguintes proteções habilitadas:
+
 - Proteção da branch `main`, exigindo revisão antes do merge
 - Opção **Require review from Code Owners** habilitada
 
-Essas configurações ainda dependem da administração do repositório. Enquanto não estiverem ativas, as regras deste protocolo devem ser verificadas manualmente por autores, revisores e mantenedores.
+Essas configurações de branch dependem da administração do repositório. Enquanto não estiverem ativas, as regras deste protocolo devem ser verificadas manualmente por autores, revisores e mantenedores.
 
 ---
 

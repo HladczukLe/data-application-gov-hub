@@ -182,7 +182,7 @@ Closes #42
 | --- | --- |
 | DAGs de ingestão | `@GovHub-br/developers` |
 | Modelos dbt | `@GovHub-br/developers` |
-| Plugins e helpers | `@GovHub-br/infra` |
+| Plugins e helpers | `@GovHub-br/developers` |
 | Documentação de configuração, infraestrutura ou deploy | `@GovHub-br/infra` |
 | Documentação de DAGs, modelos dbt ou fluxo de dados | `@GovHub-br/developers` |
 

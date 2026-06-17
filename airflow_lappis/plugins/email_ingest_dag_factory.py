@@ -70,8 +70,8 @@ def build_email_ingest_dag(
                     "CSV processado com sucesso. Dados encontrados: %s", len(csv_data)
                 )
                 return csv_data
-            except Exception as e:
-                logging.error("Erro no processamento dos emails: %s", str(e))
+            except Exception:
+                logging.exception("Erro no processamento dos emails.")
                 raise
 
         def _insert_to_db(**context: Dict[str, Any]) -> None:
@@ -91,8 +91,8 @@ def build_email_ingest_dag(
             try:
                 db = ClientPostgresDB(get_postgres_conn(postgres_conn_key))
                 db.remove_duplicates(table_name, column_mapping, schema=schema)
-            except Exception as e:
-                logging.error("Erro ao executar a limpeza de duplicados: %s", str(e))
+            except Exception:
+                logging.exception("Erro ao executar a limpeza de duplicados.")
                 raise
 
         process_task = PythonOperator(
